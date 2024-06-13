@@ -5,7 +5,7 @@ Runs downstream classifiers on the dataset and combines it with different featur
 import argparse
 import torch
 from tabpfn.scripts import tabular_metrics
-from cafe_feature_engineering import data, cafe, evaluate, settings
+from caafe import data, cafe, evaluate, settings
 import os
 import openai
 from tabpfn.scripts.tabular_baselines import clf_dict

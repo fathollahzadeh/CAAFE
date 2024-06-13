@@ -7,7 +7,6 @@ from .caafe_evaluate import (
     evaluate_dataset,
 )
 from .run_llm_code import run_llm_code
-from llm.GenerateLLMCode import GenerateLLMCode
 
 
 def get_prompt(
@@ -128,7 +127,6 @@ def generate_features(
         code, prompt = None, prompt
         return code, prompt, None
 
-    GenerateLLMCode.generate_llm_code
     def generate_code(messages):
         if model == "skip":
             return ""
@@ -230,19 +228,25 @@ def generate_features(
             rocs += [result_extended["acc"]]
         return None, rocs, accs, old_rocs, old_accs
 
-
-    system_message = "You are an expert datascientist assistant solving Kaggle problems. You answer only by generating code. Answer as concisely as possible."
-    user_message = prompt
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an expert datascientist assistant solving Kaggle problems. You answer only by generating code. Answer as concisely as possible.",
+        },
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
     display_method(f"*Dataset description:*\n {ds[-1]}")
 
     n_iter = iterative
     full_code = ""
 
     i = 0
-    role = "system"
     while i < n_iter:
         try:
-            code, number_of_tokens, time = GenerateLLMCode.generate_llm_code(role= role, user_message=user_message, system_message=system_message)
+            code = generate_code(messages)
         except Exception as e:
             display_method("Error in LLM API." + str(e))
             continue
@@ -251,11 +255,15 @@ def generate_features(
             full_code, code
         )
         if e is not None:
-            user_message = f"""Code execution failed with error: {type(e)} {e}.\n Code: ```python{code}```\n Generate next feature (fixing error?):
+            messages += [
+                {"role": "assistant", "content": code},
+                {
+                    "role": "user",
+                    "content": f"""Code execution failed with error: {type(e)} {e}.\n Code: ```python{code}```\n Generate next feature (fixing error?):
                                 ```python
-                                """
-            system_message = code
-            role = "assistant"
+                                """,
+                },
+            ]
             continue
 
         # importances = get_leave_one_out_importance(
