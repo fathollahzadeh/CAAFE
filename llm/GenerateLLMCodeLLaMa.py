@@ -6,13 +6,9 @@ import time
 
 class GenerateLLMCodeLLaMa:
     @staticmethod
-    def generate_code_LLaMa_LLM(role: str ,user_message: str, system_message: str):
+    def generate_code_LLaMa_LLM(messages):
         GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
         client = Groq(api_key=GROQ_API_KEY)
-        messages = [
-            {"role": role, "content": system_message},
-            {"role": "user", "content": user_message}
-        ]
         time_start = time.time()
         code = GenerateLLMCodeLLaMa.__submit_Request_LLaMa_LLM(messages=messages, client=client)
         time_end = time.time()

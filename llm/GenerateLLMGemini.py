@@ -5,11 +5,13 @@ import time
 
 class GenerateLLMGemini:
     @staticmethod
-    def generate_code_Gemini_LLM(user_message: str, system_message: str):
+    def generate_code_Gemini_LLM(messages: list):
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-        prompt = [system_message, user_message]
-        message = "\n".join(prompt)
-        code, number_of_tokens, time_gen = GenerateLLMGemini.__submit_Request_Gemini_LLM(messages=message)
+        prompt = ""
+        for m in messages:
+            d = m.keys()
+            prompt = f"{prompt}\n{m[d]}"
+        code, number_of_tokens, time_gen = GenerateLLMGemini.__submit_Request_Gemini_LLM(messages=prompt)
         return code, number_of_tokens, time_gen
 
     @staticmethod

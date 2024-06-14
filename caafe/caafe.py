@@ -1,7 +1,6 @@
 import copy
 import numpy as np
 
-import openai
 from sklearn.model_selection import RepeatedKFold
 from .caafe_evaluate import (
     evaluate_dataset,
@@ -11,7 +10,7 @@ from llm.GenerateLLMCode import GenerateLLMCode
 
 
 def get_prompt(
-    df, ds, iterative=1, data_description_unparsed=None, samples=None, **kwargs
+        df, ds, iterative=1, data_description_unparsed=None, samples=None, **kwargs
 ):
     how_many = (
         "up to 10 useful columns. Generate as many features as useful for downstream classifier, but as few as necessary to reach good performance."
@@ -95,16 +94,16 @@ def build_prompt_from_df(ds, df, iterative=1):
 
 
 def generate_features(
-    ds,
-    df,
-    model="gpt-3.5-turbo",
-    just_print_prompt=False,
-    iterative=1,
-    metric_used=None,
-    iterative_method="logistic",
-    display_method="markdown",
-    n_splits=10,
-    n_repeats=2,
+        ds,
+        df,
+        just_print_prompt=False,
+        iterative=1,
+        metric_used=None,
+        iterative_method="logistic",
+        display_method="markdown",
+        n_splits=10,
+        n_repeats=2,
+        model=None
 ):
     def format_for_display(code):
         code = code.replace("```python", "").replace("```", "").replace("<end>", "")
@@ -119,7 +118,7 @@ def generate_features(
         display_method = print
 
     assert (
-        iterative == 1 or metric_used is not None
+            iterative == 1 or metric_used is not None
     ), "metric_used must be set if iterative"
 
     prompt = build_prompt_from_df(ds, df, iterative=iterative)
@@ -127,22 +126,6 @@ def generate_features(
     if just_print_prompt:
         code, prompt = None, prompt
         return code, prompt, None
-
-    GenerateLLMCode.generate_llm_code
-    def generate_code(messages):
-        if model == "skip":
-            return ""
-
-        completion = openai.ChatCompletion.create(
-            model=model,
-            messages=messages,
-            stop=["```end"],
-            temperature=0.5,
-            max_tokens=500,
-        )
-        code = completion["choices"][0]["message"]["content"]
-        code = code.replace("```python", "").replace("```", "").replace("<end>", "")
-        return code
 
     def execute_and_evaluate_code_block(full_code, code):
         old_accs, old_rocs, accs, rocs = [], [], [], []
@@ -230,11 +213,16 @@ def generate_features(
             rocs += [result_extended["acc"]]
         return None, rocs, accs, old_rocs, old_accs
 
-
-    system_message = "You are an expert datascientist assistant solving Kaggle problems. You answer only by generating code. Answer as concisely as possible."
-    user_message = prompt
-    display_method(f"*Dataset description:*\n {ds[-1]}")
-
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an expert datascientist assistant solving Kaggle problems. You answer only by generating code. Answer as concisely as possible.",
+        },
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
     n_iter = iterative
     full_code = ""
 
@@ -242,7 +230,7 @@ def generate_features(
     role = "system"
     while i < n_iter:
         try:
-            code, number_of_tokens, time = GenerateLLMCode.generate_llm_code(role= role, user_message=user_message, system_message=system_message)
+            code, number_of_tokens, time = GenerateLLMCode.generate_llm_code(messages=messages)
         except Exception as e:
             display_method("Error in LLM API." + str(e))
             continue
@@ -251,11 +239,15 @@ def generate_features(
             full_code, code
         )
         if e is not None:
-            user_message = f"""Code execution failed with error: {type(e)} {e}.\n Code: ```python{code}```\n Generate next feature (fixing error?):
-                                ```python
-                                """
-            system_message = code
-            role = "assistant"
+            messages += [
+                {"role": "assistant", "content": code},
+                {
+                    "role": "user",
+                    "content": f"""Code execution failed with error: {type(e)} {e}.\n Code: ```python{code}```\n Generate next feature (fixing error?):
+                                            ```python
+                                            """,
+                },
+            ]
             continue
 
         # importances = get_leave_one_out_importance(

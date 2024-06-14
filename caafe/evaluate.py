@@ -1,6 +1,6 @@
 import os
 import pickle
-from .data import get_data_split
+from .data import load_dataset
 from .caafe_evaluate import evaluate_dataset
 from .feature_extension_baselines import (
     extend_using_dfs,
