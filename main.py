@@ -91,7 +91,7 @@ if __name__ == "__main__":
         clf_no_feat_eng.fit = partial(clf_no_feat_eng.fit, overwrite_warning=True)
 
     elif args.classifier == "RandomForest":
-        clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=10)
+        clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=500)
 
     caafe_clf = CAAFEClassifier(base_classifier=clf_no_feat_eng,
                                 llm_model=args.llm_model,
@@ -108,25 +108,28 @@ if __name__ == "__main__":
     acc_train = accuracy_score(pred_train, train_y)
 
     for i in range(1, args.prompt_number_iteration+1):
-        performance = caafe_clf.performance_results[i]
-        log_results = LogResults(dataset_name=args.dataset_name,
-                                 task_type=args.task_type,
-                                 time_total=extra_time + caafe_clf.time_execution,
-                                 classifier=args.classifier,
-                                 status="True",
-                                 time_execution=caafe_clf.time_execution,
-                                 number_iteration=i,
-                                 has_description=args.dataset_description,
-                                 llm_model=args.llm_model,
-                                 train_auc=performance["train_auc_ovo"],
-                                 train_auc_ovo=performance["train_auc_ovo"],
-                                 train_auc_ovr=performance["train_auc_ovr"],
-                                 train_accuracy=performance["train_acc"],
-                                 test_auc=performance["test_auc_ovo"],
-                                 test_auc_ovo=performance["test_auc_ovo"],
-                                 test_auc_ovr=performance["test_auc_ovr"],
-                                 test_accuracy=performance["test_acc"],
-                                 prompt_token_count=caafe_clf.prompt_number_of_tokens,
-                                 all_token_count=performance['number_of_tokens']
-                                 )
-        log_results.save_results(result_output_path=args.output_path)
+        try:
+            performance = caafe_clf.performance_results[i]
+            log_results = LogResults(dataset_name=args.dataset_name,
+                                     task_type=args.task_type,
+                                     time_total=extra_time + caafe_clf.time_execution,
+                                     classifier=args.classifier,
+                                     status="True",
+                                     time_execution=caafe_clf.time_execution,
+                                     number_iteration=i,
+                                     has_description=args.dataset_description,
+                                     llm_model=args.llm_model,
+                                     train_auc=performance["train_auc_ovo"],
+                                     train_auc_ovo=performance["train_auc_ovo"],
+                                     train_auc_ovr=performance["train_auc_ovr"],
+                                     train_accuracy=performance["train_acc"],
+                                     test_auc=performance["test_auc_ovo"],
+                                     test_auc_ovo=performance["test_auc_ovo"],
+                                     test_auc_ovr=performance["test_auc_ovr"],
+                                     test_accuracy=performance["test_acc"],
+                                     prompt_token_count=caafe_clf.prompt_number_of_tokens,
+                                     all_token_count=performance['number_of_tokens']
+                                     )
+            log_results.save_results(result_output_path=args.output_path)
+        except Exception as e:
+            print(f"iteration {i} missed!!")
