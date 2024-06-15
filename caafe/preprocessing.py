@@ -108,7 +108,8 @@ def make_datasets_numeric(df_train: pd.DataFrame, df_test: Optional[pd.DataFrame
     mappings = create_mappings(df_train)
 
     # Apply the mappings to the train and test datasets
-    non_target = [c for c in df_train.columns if c != target_column]
+    #non_target = [c for c in df_train.columns if c != target_column]
+    non_target = [c for c in df_train.columns]
     df_train[non_target] = make_dataset_numeric(df_train[non_target], mappings)
 
     if df_test is not None:
@@ -117,4 +118,4 @@ def make_datasets_numeric(df_train: pd.DataFrame, df_test: Optional[pd.DataFrame
     if return_mappings:
         return df_train, df_test, mappings
 
-    return df_train, df_test
+    return df_train, df_test, None

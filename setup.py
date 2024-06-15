@@ -23,7 +23,7 @@ setup(
         "openai==0.28",
         "kaggle",
         "openml==0.12.0",
-        "tabpfn",
+        "tabpfn"
     ],
     extras_require={
         "full": ["autofeat", "featuretools", "tabpfn[full]"],

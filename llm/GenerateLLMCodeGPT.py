@@ -1,4 +1,4 @@
-from openai import OpenAI
+import openai
 import tiktoken
 import os
 import time
@@ -7,18 +7,17 @@ import time
 class GenerateLLMCodeGPT:
     @staticmethod
     def generate_code_OpenAI_LLM(messages: list):
-        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"), )
+        openai.api_key = os.environ.get("OPENAI_API_KEY")
         number_of_tokens = GenerateLLMCodeGPT.get_number_tokens(messages=messages)
         time_start = time.time()
-        code = GenerateLLMCodeGPT.__submit_Request_OpenAI_LLM( messages=messages, client=client)
+        code = GenerateLLMCodeGPT.__submit_Request_OpenAI_LLM( messages=messages)
         time_end = time.time()
         return code, number_of_tokens, time_end - time_start
 
     @staticmethod
-    def __submit_Request_OpenAI_LLM(messages, client):
+    def __submit_Request_OpenAI_LLM(messages):
         from util.Config import _llm_model, _max_token_limit
-
-        completion = client.chat.completions.create(
+        completion = openai.ChatCompletion.create(
             model=_llm_model,
             messages=messages,
             stop=["```end"],
@@ -28,6 +27,7 @@ class GenerateLLMCodeGPT:
         code = completion["choices"][0]["message"]["content"]
         code = code.replace("```python", "").replace("```", "").replace("<end>", "")
         return code
+
 
     @staticmethod
     def get_number_tokens(messages: list):

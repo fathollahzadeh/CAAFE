@@ -3,52 +3,55 @@ import torch
 import numpy as np
 import openml
 import re
-import os
-from sklearn.model_selection import train_test_split
-import copy
 from util.FileHandler import reader_CSV
 
 
-def get_dataset_classification(dataset, target_attribute, description: str, multiclass=True, shuffled=True):
-    X, y, categorical_indicator, attribute_names = dataset.get_data(dataset_format="array", target=target_attribute)
+def get_dataset_classification(dataset, dataset_name, target_attribute, description: str, multiclass=True, shuffled=True):
+    dataset = openml.datasets.create_dataset(name=dataset_name,description=description,creator="saeed",
+                                             contributor="catdb",collection_date="2024-06-13", language="en",
+                                             licence="MIT",data=dataset,default_target_attribute=target_attribute,
+                                             ignore_attribute=target_attribute,citation="", attributes='auto')
+    print(dataset)
+    X, y, categorical_indicator, attribute_names = dataset.get_data(dataset_format="dataframe", target=target_attribute)
+    print("==============================")
 
-    if not multiclass:
-        X = X[y < 2]
-        y = y[y < 2]
-
-    if multiclass and not shuffled:
-        raise NotImplementedError("This combination of multiclass and shuffling isn't implemented")
-
-    if not isinstance(X, np.ndarray) or not isinstance(y, np.ndarray):
-        print("Not a NP Array, skipping")
-        return None, None, None, None
-
-    if not shuffled:
-        sort = np.argsort(y) if y.mean() < 0.5 else np.argsort(-y)
-        pos = int(y.sum()) if y.mean() < 0.5 else int((1 - y).sum())
-        X, y = X[sort][-pos * 2:], y[sort][-pos * 2:]
-        y = torch.tensor(y).reshape(2, -1).transpose(0, 1).reshape(-1).flip([0]).float()
-        X = (
-            torch.tensor(X)
-            .reshape(2, -1, X.shape[1])
-            .transpose(0, 1)
-            .reshape(-1, X.shape[1])
-            .flip([0])
-            .float()
-        )
-    else:
-        order = np.arange(y.shape[0])
-        np.random.seed(13)
-        np.random.shuffle(order)
-        X, y = torch.tensor(X[order]), torch.tensor(y[order])
-
-    return (
-        X,
-        y,
-        list(np.where(categorical_indicator)[0]),
-        attribute_names + [list(dataset.features.values())[-1].name],
-        description,
-    )
+    # if not multiclass:
+    #     X = X[y < 2]
+    #     y = y[y < 2]
+    #
+    # if multiclass and not shuffled:
+    #     raise NotImplementedError("This combination of multiclass and shuffling isn't implemented")
+    #
+    # if not isinstance(X, np.ndarray) or not isinstance(y, np.ndarray):
+    #     print("Not a NP Array, skipping")
+    #     return None, None, None, None
+    #
+    # if not shuffled:
+    #     sort = np.argsort(y) if y.mean() < 0.5 else np.argsort(-y)
+    #     pos = int(y.sum()) if y.mean() < 0.5 else int((1 - y).sum())
+    #     X, y = X[sort][-pos * 2:], y[sort][-pos * 2:]
+    #     y = torch.tensor(y).reshape(2, -1).transpose(0, 1).reshape(-1).flip([0]).float()
+    #     X = (
+    #         torch.tensor(X)
+    #         .reshape(2, -1, X.shape[1])
+    #         .transpose(0, 1)
+    #         .reshape(-1, X.shape[1])
+    #         .flip([0])
+    #         .float()
+    #     )
+    # else:
+    #     order = np.arange(y.shape[0])
+    #     np.random.seed(13)
+    #     np.random.shuffle(order)
+    #     X, y = torch.tensor(X[order]), torch.tensor(y[order])
+    #
+    # return (
+    #     X,
+    #     y,
+    #     list(np.where(categorical_indicator)[0]),
+    #     attribute_names + [list(dataset.features.values())[-1].name],
+    #     description,
+    # )
 
 
 def load_dataset(
@@ -69,14 +72,16 @@ def load_dataset(
         description=description,
         target_attribute=target_attribute,
         multiclass=multiclass,
-        shuffled=shuffled)
+        shuffled=shuffled,
+    dataset_name=dataset_name)
 
     (X_test, y_test, categorical_feats_test, attribute_names_test, description) = get_dataset_classification(
         dataset=test_data,
         description=description,
         target_attribute=target_attribute,
         multiclass=multiclass,
-        shuffled=shuffled)
+        shuffled=shuffled,
+    dataset_name=dataset_name)
 
     def get_df(X, y, categorical_feats, attribute_names):
         df = pd.DataFrame(data=np.concatenate([X, np.expand_dims(y, -1)], -1), columns=attribute_names)

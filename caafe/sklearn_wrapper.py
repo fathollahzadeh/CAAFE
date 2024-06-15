@@ -137,10 +137,11 @@ class CAAFEClassifier(BaseEstimator, ClassifierMixin):
                 iterative=self.iterations,
                 metric_used=auc_metric,
                 iterative_method=self.base_classifier,
-                display_method="markdown",
+                display_method="print",
                 n_splits=self.n_splits,
                 n_repeats=self.n_repeats,
             )
+            print(self.code)
 
         df_train = run_llm_code(
             self.code,

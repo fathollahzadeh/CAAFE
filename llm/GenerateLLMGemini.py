@@ -9,8 +9,7 @@ class GenerateLLMGemini:
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
         prompt = ""
         for m in messages:
-            d = m.keys()
-            prompt = f"{prompt}\n{m[d]}"
+            prompt = f"{prompt}\n{m['content']}"
         code, number_of_tokens, time_gen = GenerateLLMGemini.__submit_Request_Gemini_LLM(messages=prompt)
         return code, number_of_tokens, time_gen
 
@@ -37,7 +36,8 @@ class GenerateLLMGemini:
 
         model = genai.GenerativeModel(model_name=_llm_model,
                                       generation_config=generation_config,
-                                      safety_settings=safety_settings)
+                                      safety_settings=safety_settings,
+                                      )
 
         number_of_tokens = model.count_tokens(messages).total_tokens
 
@@ -58,7 +58,6 @@ class GenerateLLMGemini:
             return code, number_of_tokens, time_end - time_start
 
         except Exception as err:
-            #from util.Config import _delay
             time.sleep(_delay)
             return GenerateLLMGemini.__submit_Request_Gemini_LLM(messages)
 
