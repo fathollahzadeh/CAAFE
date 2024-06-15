@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 from typing import Optional
 import pandas as pd
+import time
 
 
 
@@ -98,6 +99,7 @@ class CAAFEClassifier(BaseEstimator, ClassifierMixin):
         disable_caafe : bool, optional
             Whether to disable the CAAFE algorithm, by default False.
         """
+        time_start = time.time()
         self.dataset_description = dataset_description
         self.feature_names = list(feature_names)
         self.target_name = target_name
@@ -130,7 +132,7 @@ class CAAFEClassifier(BaseEstimator, ClassifierMixin):
         if disable_caafe:
             self.code = ""
         else:
-            self.code, prompt, messages = generate_features(
+            self.code, self.prompt, self.messages, self.performance_results, self.total_wait_time, self.total_number_of_tokens, self.prompt_number_of_tokens = generate_features(
                 ds,
                 df_train,
                 model=self.llm_model,
@@ -161,6 +163,9 @@ class CAAFEClassifier(BaseEstimator, ClassifierMixin):
         self.classes_ = unique_labels(y)
 
         self.base_classifier.fit(X, y)
+
+        time_end = time.time()
+        self.time_execution = time_end - time_start - self.total_wait_time
 
         # Return the classifier
         return self

@@ -42,8 +42,7 @@ class GenerateLLMCode:
         elif _llm_platform == _GOOGLE:
             prompt = ""
             for m in messages:
-                d = m.keys()
-                prompt = f"{prompt}\n{m[d]}"
+                prompt = f"{prompt}\n{m['content']}"
             return GenerateLLMGemini.get_number_tokens(messages=prompt)
 
         else:

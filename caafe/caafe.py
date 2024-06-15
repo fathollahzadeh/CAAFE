@@ -128,7 +128,7 @@ def generate_features(
         return code, prompt, None
 
     def execute_and_evaluate_code_block(full_code, code):
-        old_accs, old_rocs, accs, rocs = [], [], [], []
+        old_accs, old_rocs, accs_train, rocs_train_ovo,rocs_train_ovr, accs_test, rocs_test_ovo,rocs_test_ovr = [], [], [], [], [], [], [], []
 
         ss = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=0)
         for (train_idx, valid_idx) in ss.split(df):
@@ -168,7 +168,7 @@ def generate_features(
             except Exception as e:
                 display_method(f"Error in code execution. {type(e)} {e}")
                 display_method(f"```python\n{format_for_display(code)}\n```\n")
-                return e, None, None, None, None
+                return e, None, None, None, None, None, None, None, None
 
             # Add target column back to df_train
             df_train[ds[4][-1]] = target_train
@@ -194,9 +194,20 @@ def generate_features(
                         target_name=ds[4][-1],
                     )
 
-                    result_extended = evaluate_dataset(
+                    result_extended_test = evaluate_dataset(
                         df_train=df_train_extended,
                         df_test=df_valid_extended,
+                        prompt_id="XX",
+                        name=ds[0],
+                        method=iterative_method,
+                        metric_used=metric_used,
+                        seed=0,
+                        target_name=ds[4][-1],
+                    )
+
+                    result_extended_train = evaluate_dataset(
+                        df_train=df_train_extended,
+                        df_test=df_train_extended,
                         prompt_id="XX",
                         name=ds[0],
                         method=iterative_method,
@@ -207,11 +218,18 @@ def generate_features(
                 finally:
                     sys.stdout = old_stdout
 
-            old_accs += [result_old["roc"]]
+            old_accs += [result_old["roc_ovo"]]
             old_rocs += [result_old["acc"]]
-            accs += [result_extended["roc"]]
-            rocs += [result_extended["acc"]]
-        return None, rocs, accs, old_rocs, old_accs
+
+            accs_train += [result_extended_train["acc"]]
+            rocs_train_ovo += [result_extended_train["roc_ovo"]]
+            rocs_train_ovr += [result_extended_train["roc_ovr"]]
+
+            accs_test += [result_extended_test["acc"]]
+            rocs_test_ovo += [result_extended_test["roc_ovo"]]
+            rocs_test_ovr += [result_extended_test["roc_ovr"]]
+
+        return None, rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test, old_rocs, old_accs
 
     messages = [
         {
@@ -229,16 +247,21 @@ def generate_features(
     full_code = ""
 
     i = 0
+    total_wait_time = 0
+    performance_results = {}
+    total_number_of_tokens = 0
+    prompt_number_of_tokens = GenerateLLMCode.get_number_tokens(messages=messages)
+
     while i < n_iter:
         try:
-            code, number_of_tokens, time = GenerateLLMCode.generate_llm_code(messages=messages)
+            code, number_of_tokens, wait_time = GenerateLLMCode.generate_llm_code(messages=messages)
+            total_wait_time += wait_time
+            total_number_of_tokens += number_of_tokens
         except Exception as e:
             display_method("Error in LLM API." + str(e))
             continue
         i = i + 1
-        e, rocs, accs, old_rocs, old_accs = execute_and_evaluate_code_block(
-            full_code, code
-        )
+        e, rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test, old_rocs, old_accs = execute_and_evaluate_code_block(full_code, code)
         if e is not None:
             messages += [
                 {"role": "assistant", "content": code},
@@ -251,17 +274,8 @@ def generate_features(
             ]
             continue
 
-        # importances = get_leave_one_out_importance(
-        #    df_train_extended,
-        #    df_valid_extended,
-        #    ds,
-        #    iterative_method,
-        #    metric_used,
-        # )
-        # """ROC Improvement by using each feature: {importances}"""
-
-        improvement_roc = np.nanmean(rocs) - np.nanmean(old_rocs)
-        improvement_acc = np.nanmean(accs) - np.nanmean(old_accs)
+        improvement_roc = np.nanmean(rocs_test_ovr) - np.nanmean(old_rocs)
+        improvement_acc = np.nanmean(accs_test) - np.nanmean(old_accs)
 
         add_feature = True
         add_feature_sentence = "The code was executed and changes to ´df´ were kept."
@@ -274,18 +288,26 @@ def generate_features(
             + f"*Iteration {i}*\n"
             + f"```python\n{format_for_display(code)}\n```\n"
             + f"Performance before adding features ROC {np.nanmean(old_rocs):.3f}, ACC {np.nanmean(old_accs):.3f}.\n"
-            + f"Performance after adding features ROC {np.nanmean(rocs):.3f}, ACC {np.nanmean(accs):.3f}.\n"
+            + f"Performance after adding features ROC {np.nanmean(rocs_test_ovr):.3f}, ACC {np.nanmean(accs_test):.3f}.\n"
             + f"Improvement ROC {improvement_roc:.3f}, ACC {improvement_acc:.3f}.\n"
             + f"{add_feature_sentence}\n"
             + f"\n"
         )
+
+        performance_results[i] = {"test_auc_ovo": np.nanmean(rocs_test_ovo),
+                                  "test_auc_ovr": np.nanmean(rocs_test_ovr),
+                                  "test_acc": np.nanmean(accs_test),
+                                  "train_auc_ovo": np.nanmean(rocs_train_ovo),
+                                  "train_auc_ovr": np.nanmean(rocs_train_ovr),
+                                  "train_acc": np.nanmean(accs_train),
+                                  "number_of_tokens": total_number_of_tokens}
 
         if len(code) > 10:
             messages += [
                 {"role": "assistant", "content": code},
                 {
                     "role": "user",
-                    "content": f"""Performance after adding feature ROC {np.nanmean(rocs):.3f}, ACC {np.nanmean(accs):.3f}. {add_feature_sentence}
+                    "content": f"""Performance after adding feature ROC {np.nanmean(rocs_test_ovr):.3f}, ACC {np.nanmean(accs_test):.3f}. {add_feature_sentence}
 Next codeblock:
 """,
                 },
@@ -293,4 +315,4 @@ Next codeblock:
         if add_feature:
             full_code += code
 
-    return full_code, prompt, messages
+    return full_code, prompt, messages, performance_results, total_wait_time, total_number_of_tokens, prompt_number_of_tokens

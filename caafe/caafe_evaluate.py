@@ -123,12 +123,15 @@ def evaluate_dataset(
         )
 
     acc = accuracy_metric(test_y, ys) #tabpfn.scripts.tabular_metrics.accuracy_metric(test_y, ys)
-    roc = auc_metric(test_y, ys) #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
+    roc_ovo = auc_metric(test_y, ys, multi_class="ovo") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
+    roc_ovr = auc_metric(test_y, ys, multi_class="ovr") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
+
 
     method_str = method if type(method) == str else "transformer"
     return {
         "acc": float(acc.numpy()),
-        "roc": float(roc.numpy()),
+        "roc_ovo": float(roc_ovo.numpy()),
+        "roc_ovr": float(roc_ovr.numpy()),
         "prompt": prompt_id,
         "seed": seed,
         "name": name,

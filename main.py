@@ -10,6 +10,9 @@ from caafe import CAAFEClassifier
 from caafe.preprocessing import make_datasets_numeric
 from util.FileHandler import reader_CSV
 from caafe.data import refactor_openml_description, get_X_y
+from sklearn.metrics import accuracy_score, f1_score, log_loss
+from util.LogResults import LogResults
+import time
 
 
 def parse_arguments():
@@ -66,6 +69,8 @@ if __name__ == "__main__":
     args = parse_arguments()
     set_config(model=args.llm_model, delay=args.delay)
 
+    time_start = time.time()
+
     description = refactor_openml_description(args.description)
     df_train = reader_CSV(args.data_source_train_path)
     df_test = reader_CSV(args.data_source_test_path)
@@ -73,18 +78,11 @@ if __name__ == "__main__":
     df_train, df_test, _ = make_datasets_numeric(df_train = df_train, df_test = df_test,
                                               target_column=args.target_attribute)
 
-
     _, train_y = get_X_y(df_train, args.target_attribute)
     _, test_y = get_X_y(df_test, args.target_attribute)
 
-
-    # ds, df_train, df_test = load_dataset(dataset_name=args.dataset_name,
-    #                                      train_path=args.data_source_train_path,
-    #                                      test_path=args.data_source_test_path,
-    #                                      target_attribute=args.target_attribute,
-    #                                      description=args.description,
-    #                                      multiclass=args.task_type == "multiclass",
-    #                                      shuffled=False)
+    time_end = time.time()
+    extra_time = time_end - time_start
 
     clf_no_feat_eng = None
     if args.classifier == "TabPFN":
@@ -93,7 +91,7 @@ if __name__ == "__main__":
         clf_no_feat_eng.fit = partial(clf_no_feat_eng.fit, overwrite_warning=True)
 
     elif args.classifier == "RandomForest":
-        clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=500)
+        clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=2)
 
     caafe_clf = CAAFEClassifier(base_classifier=clf_no_feat_eng,
                                 llm_model=args.llm_model,
@@ -102,3 +100,33 @@ if __name__ == "__main__":
     caafe_clf.fit_pandas(df_train,
                          target_column_name=args.target_attribute,
                          dataset_description=description)
+
+    pred_test = caafe_clf.predict(df_test)
+    pred_train = caafe_clf.predict(df_train)
+
+    acc_test = accuracy_score(pred_test, test_y)
+    acc_train = accuracy_score(pred_train, train_y)
+
+    for i in range(1, args.prompt_number_iteration+1):
+        performance = caafe_clf.performance_results[i]
+        log_results = LogResults(dataset_name=args.dataset_name,
+                                 task_type=args.task_type,
+                                 time_total=extra_time + caafe_clf.time_execution,
+                                 classifier=args.classifier,
+                                 status="True",
+                                 time_execution=caafe_clf.time_execution,
+                                 number_iteration=i,
+                                 has_description=args.dataset_description,
+                                 llm_model=args.llm_model,
+                                 train_auc=performance["train_auc_ovo"],
+                                 train_auc_ovo=performance["train_auc_ovo"],
+                                 train_auc_ovr=performance["train_auc_ovr"],
+                                 train_accuracy=performance["train_acc"],
+                                 test_auc=performance["test_auc_ovo"],
+                                 test_auc_ovo=performance["test_auc_ovo"],
+                                 test_auc_ovr=performance["test_auc_ovr"],
+                                 test_accuracy=performance["test_acc"],
+                                 prompt_token_count=caafe_clf.prompt_number_of_tokens,
+                                 all_token_count=performance['number_of_tokens']
+                                 )
+        log_results.save_results(result_output_path=args.output_path)
