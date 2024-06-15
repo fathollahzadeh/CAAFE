@@ -141,7 +141,6 @@ class CAAFEClassifier(BaseEstimator, ClassifierMixin):
                 n_splits=self.n_splits,
                 n_repeats=self.n_repeats,
             )
-            print(self.code)
 
         df_train = run_llm_code(
             self.code,

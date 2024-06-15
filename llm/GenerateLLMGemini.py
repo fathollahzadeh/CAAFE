@@ -6,7 +6,9 @@ import time
 class GenerateLLMGemini:
     @staticmethod
     def generate_code_Gemini_LLM(messages: list):
-        genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+        # AIzaSyB0v_AE9ArUh9wZpGqasQbjwzlfsCj8Azk
+        # genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+        genai.configure(api_key="AIzaSyB0v_AE9ArUh9wZpGqasQbjwzlfsCj8Azk")
         prompt = ""
         for m in messages:
             prompt = f"{prompt}\n{m['content']}"

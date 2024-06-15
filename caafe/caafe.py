@@ -10,7 +10,7 @@ from llm.GenerateLLMCode import GenerateLLMCode
 
 
 def get_prompt(
-        df, ds, iterative=1, data_description_unparsed=None, samples=None, **kwargs
+    df, ds, iterative=1, data_description_unparsed=None, samples=None, **kwargs
 ):
     how_many = (
         "up to 10 useful columns. Generate as many features as useful for downstream classifier, but as few as necessary to reach good performance."
@@ -94,16 +94,16 @@ def build_prompt_from_df(ds, df, iterative=1):
 
 
 def generate_features(
-        ds,
-        df,
-        just_print_prompt=False,
-        iterative=1,
-        metric_used=None,
-        iterative_method="logistic",
-        display_method="markdown",
-        n_splits=10,
-        n_repeats=2,
-        model=None
+    ds,
+    df,
+    model="gpt-3.5-turbo",
+    just_print_prompt=False,
+    iterative=1,
+    metric_used=None,
+    iterative_method="logistic",
+    display_method="markdown",
+    n_splits=10,
+    n_repeats=2,
 ):
     def format_for_display(code):
         code = code.replace("```python", "").replace("```", "").replace("<end>", "")
@@ -118,7 +118,7 @@ def generate_features(
         display_method = print
 
     assert (
-            iterative == 1 or metric_used is not None
+        iterative == 1 or metric_used is not None
     ), "metric_used must be set if iterative"
 
     prompt = build_prompt_from_df(ds, df, iterative=iterative)
@@ -223,11 +223,12 @@ def generate_features(
             "content": prompt,
         },
     ]
+    # display_method(f"*Dataset description:*\n {ds[-1]}")
+
     n_iter = iterative
     full_code = ""
 
     i = 0
-    role = "system"
     while i < n_iter:
         try:
             code, number_of_tokens, time = GenerateLLMCode.generate_llm_code(messages=messages)
@@ -244,8 +245,8 @@ def generate_features(
                 {
                     "role": "user",
                     "content": f"""Code execution failed with error: {type(e)} {e}.\n Code: ```python{code}```\n Generate next feature (fixing error?):
-                                            ```python
-                                            """,
+                                ```python
+                                """,
                 },
             ]
             continue

@@ -4,7 +4,6 @@ import torch
 import yaml
 from argparse import ArgumentParser
 from util.FileHandler import read_text_file_line_by_line
-from caafe.data import load_dataset
 from util.Config import set_config
 from sklearn.ensemble import RandomForestClassifier
 from caafe import CAAFEClassifier
