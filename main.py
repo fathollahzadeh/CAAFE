@@ -88,6 +88,7 @@ if __name__ == "__main__":
     if args.classifier == "TabPFN":
         clf_no_feat_eng = TabPFNClassifier(device=('cuda' if torch.cuda.is_available() else 'cpu'),
                                            N_ensemble_configurations=4)
+        clf_no_feat_eng.max_num_classes = 23
         clf_no_feat_eng.fit = partial(clf_no_feat_eng.fit, overwrite_warning=True)
 
     elif args.classifier == "RandomForest":
