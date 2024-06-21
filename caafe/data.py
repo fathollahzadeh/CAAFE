@@ -108,6 +108,8 @@ def load_dataset(
     return ds, df_train, df_test
 
 def refactor_openml_description(description):
+    if description is None:
+        return ""
     """Refactor the description of an openml dataset to remove the irrelevant parts."""
     splits = re.split("\n", description)
     blacklist = [
