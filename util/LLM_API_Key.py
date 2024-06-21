@@ -5,7 +5,7 @@ import datetime
 
 class LLM_API_Key(object):
     def __init__(self):
-        from .Config import _llm_platform, _OPENAI, _GOOGLE, _META, _delay
+        from .Config import _llm_platform, _OPENAI, _GOOGLE, _META
         key = ""
         if _llm_platform == _OPENAI:
             key = "OPENAI_API_KEY"
