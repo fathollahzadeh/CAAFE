@@ -1,12 +1,14 @@
 import google.generativeai as genai
-import os
 import time
 
 
 class GenerateLLMGemini:
     @staticmethod
     def generate_code_Gemini_LLM(messages: list):
-        genai.configure(api_key=os.environ["GOOGLE_API_KEY_2"])
+        from util.Config import _LLM_API_Key
+        _, api_key = _LLM_API_Key.get_API_Key()
+        genai.configure(api_key=api_key)
+
         prompt = ""
         for m in messages:
             prompt = f"{prompt}\n{m['content']}"
@@ -19,13 +21,12 @@ class GenerateLLMGemini:
 
     @staticmethod
     def __submit_Request_Gemini_LLM(messages):
-        from util.Config import _delay
+        from util.Config import _LLM_API_Key, _llm_model
 
         time_start = time.time()
-        from util.Config import _llm_model
 
         generation_config = {
-            "temperature": 0,
+            "temperature": 0.5,
             "top_p": 1,
             "top_k": 64,
             "max_output_tokens": 8192,
@@ -40,8 +41,7 @@ class GenerateLLMGemini:
 
         model = genai.GenerativeModel(model_name=_llm_model,
                                       generation_config=generation_config,
-                                      safety_settings=safety_settings,
-                                      )
+                                      safety_settings=safety_settings)
 
         number_of_tokens = model.count_tokens(messages).total_tokens
 
@@ -61,8 +61,9 @@ class GenerateLLMGemini:
             time_end = time.time()
             return code, number_of_tokens, time_end - time_start
 
-        except Exception as err:
-            time.sleep(_delay)
+        except Exception:
+            _, api_key = _LLM_API_Key.get_API_Key()
+            genai.configure(api_key=api_key)
             return GenerateLLMGemini.__submit_Request_Gemini_LLM(messages)
 
     @staticmethod

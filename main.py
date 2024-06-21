@@ -26,6 +26,7 @@ def parse_arguments():
     parser.add_argument('--delay', type=int, default=20)
     parser.add_argument('--result-output-path', type=str, default="/tmp/results.csv")
     parser.add_argument('--classifier', type=str, default="TabPFN")
+    parser.add_argument('--system-log', type=str, default="/tmp/caafe-system-log.dat")
 
     args = parser.parse_args()
 
@@ -67,7 +68,7 @@ def parse_arguments():
 if __name__ == "__main__":
 
     args = parse_arguments()
-    set_config(model=args.llm_model, delay=args.delay)
+    set_config(model=args.llm_model, delay=args.delay, system_log=args.system_log)
 
     time_start = time.time()
 

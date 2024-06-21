@@ -1,27 +1,37 @@
-import os
 import re
 from groq import Groq
 import time
+import tiktoken
 
 
 class GenerateLLMCodeLLaMa:
     @staticmethod
-    def generate_code_LLaMa_LLM(messages):
-        GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-        client = Groq(api_key=GROQ_API_KEY)
+    def generate_code_LLaMa_LLM(messages: list):
         time_start = time.time()
-        code = GenerateLLMCodeLLaMa.__submit_Request_LLaMa_LLM(messages=messages, client=client)
+        from util.Config import _LLM_API_Key
+        _, api_key = _LLM_API_Key.get_API_Key()
+        client = Groq(api_key=api_key)
         time_end = time.time()
-        return code, 0, time_end - time_start
+        wait_time_1 = time_end - time_start
+        prompt = ""
+        for m in messages:
+            prompt = f"{prompt}\n{m['content']}"
+
+        time_start = time.time()
+        code, gen_time = GenerateLLMCodeLLaMa.__submit_Request_LLaMa_LLM(messages=prompt, client=client)
+        time_end = time.time()
+        wait_time_2 = time_end - time_start - gen_time
+        return code, GenerateLLMCodeLLaMa.get_number_tokens(messages=prompt), wait_time_1 + wait_time_2
 
     @staticmethod
     def __submit_Request_LLaMa_LLM(messages, client):
-        from util.Config import _llm_model, _delay
+        from util.Config import _llm_model, _LLM_API_Key
         try:
+            time_start = time.time()
             completion = client.chat.completions.create(
                 model=_llm_model,
                 messages=messages,
-                temperature=0
+                temperature=0.5
             )
             content = completion.choices[0].message.content
             content = GenerateLLMCodeLLaMa.__refine_text(content)
@@ -31,11 +41,11 @@ class GenerateLLMCodeLLaMa:
                 for code in code_blocks:
                     codes.append(code)
 
-                return "\n".join(codes)
+                return "\n".join(codes), time.time() - time_start
             else:
-                return content
-        except Exception as err:
-            time.sleep(_delay)
+                return content, time.time() - time_start
+        except Exception:
+            _, api_key = _LLM_API_Key.get_API_Key()
             return GenerateLLMCodeLLaMa.__submit_Request_LLaMa_LLM(messages, client)
 
     @staticmethod
@@ -65,3 +75,11 @@ class GenerateLLMCodeLLaMa:
         from .GenerateLLMCode import GenerateLLMCode
         text = GenerateLLMCode.refine_source_code(code=text)
         return text
+
+    @staticmethod
+    def get_number_tokens(messages: str):
+        enc = tiktoken.get_encoding("cl100k_base")
+        enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
+        token_integers = enc.encode(messages)
+        num_tokens = len(token_integers)
+        return num_tokens
