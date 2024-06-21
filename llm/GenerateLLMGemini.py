@@ -68,7 +68,9 @@ class GenerateLLMGemini:
 
     @staticmethod
     def get_number_tokens(messages: str):
-        from util.Config import _llm_model
+        from util.Config import _LLM_API_Key, _llm_model
+        _, api_key = _LLM_API_Key.get_API_Key()
+        genai.configure(api_key=api_key)
 
         generation_config = {
             "temperature": 0,
