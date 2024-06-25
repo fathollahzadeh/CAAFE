@@ -18,7 +18,7 @@ class GenerateLLMCodeLLaMa:
             prompt = f"{prompt}\n{m['content']}"
 
         time_start = time.time()
-        code, gen_time = GenerateLLMCodeLLaMa.__submit_Request_LLaMa_LLM(messages=prompt, client=client)
+        code, gen_time = GenerateLLMCodeLLaMa.__submit_Request_LLaMa_LLM(messages=messages, client=client)
         time_end = time.time()
         wait_time_2 = time_end - time_start - gen_time
         return code, GenerateLLMCodeLLaMa.get_number_tokens(messages=prompt), wait_time_1 + wait_time_2
