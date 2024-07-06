@@ -33,8 +33,7 @@ class GenerateLLMCodeGPT:
     def get_number_tokens(messages: list):
         prompt = ""
         for m in messages:
-            d = m.keys()
-            prompt = f"{prompt}\n{m[d]}"
+            prompt = f"{prompt}\n{m['content']}"
 
         from util.Config import _llm_model
         enc = tiktoken.get_encoding("cl100k_base")

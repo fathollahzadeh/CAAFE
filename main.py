@@ -93,7 +93,7 @@ if __name__ == "__main__":
         clf_no_feat_eng.fit = partial(clf_no_feat_eng.fit, overwrite_warning=True)
 
     elif args.classifier == "RandomForest":
-        clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=500)
+        clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=2)
 
     caafe_clf = CAAFEClassifier(base_classifier=clf_no_feat_eng,
                                 llm_model=args.llm_model,
