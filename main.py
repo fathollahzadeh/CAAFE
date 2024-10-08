@@ -84,54 +84,57 @@ if __name__ == "__main__":
 
     set_dataset(df_train=df_train, trainy=train_y, df_test=df_test, testy=test_y, traget_attribute=args.target_attribute)
 
-    time_end = time.time()
-    extra_time = time_end - time_start
+    flag_run = True
+    while(flag_run):
+        time_end = time.time()
+        extra_time = time_end - time_start
 
-    clf_no_feat_eng = None
-    if args.classifier == "TabPFN":
-        clf_no_feat_eng = TabPFNClassifier(device=('cuda' if torch.cuda.is_available() else 'cpu'),
-                                           N_ensemble_configurations=4)
-        clf_no_feat_eng.max_num_classes = 150
-        clf_no_feat_eng.max_num_features = 500
-        clf_no_feat_eng.fit = partial(clf_no_feat_eng.fit, overwrite_warning=True)
+        clf_no_feat_eng = None
+        if args.classifier == "TabPFN":
+            clf_no_feat_eng = TabPFNClassifier(device=('cuda' if torch.cuda.is_available() else 'cpu'),
+                                               N_ensemble_configurations=4)
+            clf_no_feat_eng.max_num_classes = 150
+            clf_no_feat_eng.max_num_features = 500
+            clf_no_feat_eng.fit = partial(clf_no_feat_eng.fit, overwrite_warning=True)
 
-    elif args.classifier == "RandomForest":
-        clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=2)
+        elif args.classifier == "RandomForest":
+            clf_no_feat_eng = RandomForestClassifier(max_leaf_nodes=2)
 
-    caafe_clf = CAAFEClassifier(base_classifier=clf_no_feat_eng,
-                                llm_model=args.llm_model,
-                                iterations=args.prompt_number_iteration)
+        caafe_clf = CAAFEClassifier(base_classifier=clf_no_feat_eng,
+                                    llm_model=args.llm_model,
+                                    iterations=args.prompt_number_iteration)
 
-    caafe_clf.fit_pandas(df_train,
-                         target_column_name=args.target_attribute,
-                         dataset_description=description)
+        caafe_clf.fit_pandas(df_train,
+                             target_column_name=args.target_attribute,
+                             dataset_description=description)
 
-    pred_test = caafe_clf.predict(df_test)
-    pred_train = caafe_clf.predict(df_train)
+        pred_test = caafe_clf.predict(df_test)
+        pred_train = caafe_clf.predict(df_train)
 
-    for i in range(1, args.prompt_number_iteration+1):
-        try:
-            performance = caafe_clf.performance_results[i]
-            log_results = LogResults(dataset_name=args.dataset_name,
-                                     task_type=args.task_type,
-                                     time_total=extra_time + caafe_clf.time_execution,
-                                     classifier=args.classifier,
-                                     status="True",
-                                     time_execution=caafe_clf.time_execution,
-                                     number_iteration=i,
-                                     has_description=args.dataset_description,
-                                     llm_model=args.llm_model,
-                                     train_auc=performance["train_auc_ovo"],
-                                     train_auc_ovo=performance["train_auc_ovo"],
-                                     train_auc_ovr=performance["train_auc_ovr"],
-                                     train_accuracy=performance["train_acc"],
-                                     test_auc=performance["test_auc_ovo"],
-                                     test_auc_ovo=performance["test_auc_ovo"],
-                                     test_auc_ovr=performance["test_auc_ovr"],
-                                     test_accuracy=performance["test_acc"],
-                                     prompt_token_count=caafe_clf.prompt_number_of_tokens,
-                                     all_token_count=performance['number_of_tokens']
-                                     )
-            log_results.save_results(result_output_path=args.output_path)
-        except Exception as e:
-            print(f"iteration {i} missed!!")
+        for i in range(1, args.prompt_number_iteration+1):
+            try:
+                performance = caafe_clf.performance_results[i]
+                log_results = LogResults(dataset_name=args.dataset_name,
+                                         task_type=args.task_type,
+                                         time_total=extra_time + caafe_clf.time_execution,
+                                         classifier=args.classifier,
+                                         status="True",
+                                         time_execution=caafe_clf.time_execution,
+                                         number_iteration=i,
+                                         has_description=args.dataset_description,
+                                         llm_model=args.llm_model,
+                                         train_auc=performance["train_auc_ovo"],
+                                         train_auc_ovo=performance["train_auc_ovo"],
+                                         train_auc_ovr=performance["train_auc_ovr"],
+                                         train_accuracy=performance["train_acc"],
+                                         test_auc=performance["test_auc_ovo"],
+                                         test_auc_ovo=performance["test_auc_ovo"],
+                                         test_auc_ovr=performance["test_auc_ovr"],
+                                         test_accuracy=performance["test_acc"],
+                                         prompt_token_count=caafe_clf.prompt_number_of_tokens,
+                                         all_token_count=performance['number_of_tokens']
+                                         )
+                log_results.save_results(result_output_path=args.output_path)
+                flag_run = False
+            except Exception as e:
+                print(f"iteration {i} missed!!")
