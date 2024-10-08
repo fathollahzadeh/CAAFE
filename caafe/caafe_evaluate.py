@@ -110,11 +110,9 @@ def evaluate_dataset(
         )
     # If sklearn classifier
     elif isinstance(method, BaseEstimator):
-        print(f"IIIIIIIIIIIIIIIIIIIIII  {method}")
         method.fit(X=x, y=y.long())
         ys = method.predict_proba(test_x)
     else:
-        print("MMMMMMMMMMMMMMMMMMMMMMM")
         metric, ys, res = method(
             x,
             y,
@@ -123,23 +121,24 @@ def evaluate_dataset(
             [],
             metric_used,
         )
-    print("TEST Y >>>>>>>>>>>>>>")
-    print(test_y)
-    print(f"YS >>>>>>>>>>>>>>>> {len(ys[0])}")
-    print(ys)
-    print("----------------------------------")
     from tabpfn.scripts.tabular_metrics import accuracy_metric, auc_metric
     acc = accuracy_metric(test_y, ys) #accuracy_metric(test_y, ys) #
-    roc_ovo = auc_metric(test_y, ys, multi_class="ovo") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
-    roc_ovr = auc_metric(test_y, ys, multi_class="ovr") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
-
+    roc_ovo = float(0)
+    roc_ovr = float(0)
+    try:
+        roc_ovo = auc_metric(test_y, ys, multi_class="ovo") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
+        roc_ovr = auc_metric(test_y, ys, multi_class="ovr") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
+        roc_ovo = float(roc_ovo.numpy())
+        roc_ovr = float(roc_ovr.numpy())
+    except:
+        pass
 
     method_str = method if type(method) == str else "transformer"
     print(method_str)
     return {
         "acc": float(acc.numpy()),
-        "roc_ovo": float(roc_ovo.numpy()),
-        "roc_ovr": float(roc_ovr.numpy()),
+        "roc_ovo": roc_ovo,
+        "roc_ovr": roc_ovr,
         "prompt": prompt_id,
         "seed": seed,
         "name": name,
