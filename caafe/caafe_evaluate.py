@@ -110,7 +110,7 @@ def evaluate_dataset(
         )
     # If sklearn classifier
     elif isinstance(method, BaseEstimator):
-        print("IIIIIIIIIIIIIIIIIIIIII")
+        print(f"IIIIIIIIIIIIIIIIIIIIII  {method}")
         method.fit(X=x, y=y.long())
         ys = method.predict_proba(test_x)
     else:
@@ -125,7 +125,7 @@ def evaluate_dataset(
         )
     print("TEST Y >>>>>>>>>>>>>>")
     print(test_y)
-    print("YS >>>>>>>>>>>>>>>>")
+    print(f"YS >>>>>>>>>>>>>>>> {len(ys[0])}")
     print(ys)
     print("----------------------------------")
     from tabpfn.scripts.tabular_metrics import accuracy_metric, auc_metric
