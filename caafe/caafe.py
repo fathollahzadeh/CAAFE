@@ -10,7 +10,7 @@ from llm.GenerateLLMCode import GenerateLLMCode
 
 
 def get_prompt(
-    df, ds, iterative=1, data_description_unparsed=None, samples=None, **kwargs
+        df, ds, iterative=1, data_description_unparsed=None, samples=None, **kwargs
 ):
     how_many = (
         "up to 10 useful columns. Generate as many features as useful for downstream classifier, but as few as necessary to reach good performance."
@@ -94,16 +94,16 @@ def build_prompt_from_df(ds, df, iterative=1):
 
 
 def generate_features(
-    ds,
-    df,
-    model="gpt-3.5-turbo",
-    just_print_prompt=False,
-    iterative=1,
-    metric_used=None,
-    iterative_method="logistic",
-    display_method="markdown",
-    n_splits=10,
-    n_repeats=2,
+        ds,
+        df,
+        model="gpt-3.5-turbo",
+        just_print_prompt=False,
+        iterative=1,
+        metric_used=None,
+        iterative_method="logistic",
+        display_method="markdown",
+        n_splits=10,
+        n_repeats=2,
 ):
     def format_for_display(code):
         code = code.replace("```python", "").replace("```", "").replace("<end>", "")
@@ -118,7 +118,7 @@ def generate_features(
         display_method = print
 
     assert (
-        iterative == 1 or metric_used is not None
+            iterative == 1 or metric_used is not None
     ), "metric_used must be set if iterative"
 
     prompt = build_prompt_from_df(ds, df, iterative=iterative)
@@ -127,8 +127,86 @@ def generate_features(
         code, prompt = None, prompt
         return code, prompt, None
 
+    def evaluate_model(full_code, code):
+        from util.Config import _df_train, _trainy, _df_test, _testy, _target_attribute
+        df_train = _df_train.drop(columns=[_target_attribute])
+        df_test = _df_test.drop(columns=[_target_attribute])
+        try:
+            if code is None:
+                df_train = run_llm_code(
+                    full_code,
+                    df_train,
+                    convert_categorical_to_integer=True,
+                )
+                df_test = run_llm_code(
+                    full_code,
+                    df_test,
+                    convert_categorical_to_integer=True,
+                )
+            else:
+                df_train = run_llm_code(
+                    full_code + "\n" + code,
+                    df_train,
+                    convert_categorical_to_integer=True,
+                )
+                df_test = run_llm_code(
+                    full_code + "\n" + code,
+                    df_test,
+                    convert_categorical_to_integer=True,
+                )
+
+        except Exception as e:
+            display_method(f"Error in code execution. {type(e)} {e}")
+            display_method(f"```python\n{format_for_display(code)}\n```\n")
+            return e, None, None, None, None, None, None, None, None
+
+            # Add target column back to df_train
+        df_train[_target_attribute] = _trainy
+        df_test[_target_attribute] = _testy
+
+        from contextlib import contextmanager
+        import sys, os
+
+        with open(os.devnull, "w") as devnull:
+            old_stdout = sys.stdout
+            sys.stdout = devnull
+            try:
+                result_train = evaluate_dataset(
+                    df_train=df_train,
+                    df_test=df_train,
+                    prompt_id="XX",
+                    name=ds[0],
+                    method=iterative_method,
+                    metric_used=metric_used,
+                    seed=0,
+                    target_name=ds[4][-1],
+                )
+
+                result_test = evaluate_dataset(
+                    df_train=df_train,
+                    df_test=df_test,
+                    prompt_id="XX",
+                    name=ds[0],
+                    method=iterative_method,
+                    metric_used=metric_used,
+                    seed=0,
+                    target_name=ds[4][-1],
+                )
+            finally:
+                sys.stdout = old_stdout
+
+        accs_train = result_train["acc"]
+        rocs_train_ovo = result_train["roc_ovo"]
+        rocs_train_ovr = result_train["roc_ovr"]
+
+        accs_test = result_test["acc"]
+        rocs_test_ovo = result_test["roc_ovo"]
+        rocs_test_ovr = result_test["roc_ovr"]
+
+        return None, rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test
+
     def execute_and_evaluate_code_block(full_code, code):
-        old_accs, old_rocs, accs_train, rocs_train_ovo,rocs_train_ovr, accs_test, rocs_test_ovo,rocs_test_ovr = [], [], [], [], [], [], [], []
+        old_accs, old_rocs, accs_train, rocs_train_ovo, rocs_train_ovr, accs_test, rocs_test_ovo, rocs_test_ovr = [], [], [], [], [], [], [], []
 
         ss = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=0)
 
@@ -262,7 +340,8 @@ def generate_features(
             display_method("Error in LLM API." + str(e))
             continue
         i = i + 1
-        e, rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test, old_rocs, old_accs = execute_and_evaluate_code_block(full_code, code)
+        e, rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test, old_rocs, old_accs = execute_and_evaluate_code_block(
+            full_code, code)
         if e is not None:
             messages += [
                 {"role": "assistant", "content": code},
@@ -279,9 +358,11 @@ def generate_features(
         improvement_acc = np.nanmean(accs_test) - np.nanmean(old_accs)
 
         add_feature = True
+        update_code = code
         add_feature_sentence = "The code was executed and changes to ´df´ were kept."
         if improvement_roc + improvement_acc <= 0:
             add_feature = False
+            update_code = None
             add_feature_sentence = f"The last code changes to ´df´ were discarded. (Improvement: {improvement_roc + improvement_acc})"
 
         display_method(
@@ -295,6 +376,7 @@ def generate_features(
             + f"\n"
         )
 
+        rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test = evaluate_model(full_code=full_code, code=update_code)
         performance_results[i] = {"test_auc_ovo": np.nanmean(rocs_test_ovo),
                                   "test_auc_ovr": np.nanmean(rocs_test_ovr),
                                   "test_acc": np.nanmean(accs_test),

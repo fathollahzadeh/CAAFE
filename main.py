@@ -4,13 +4,13 @@ import torch
 import yaml
 from argparse import ArgumentParser
 from util.FileHandler import read_text_file_line_by_line
-from util.Config import set_config
+from util.Config import set_config, set_dataset
 from sklearn.ensemble import RandomForestClassifier
 from caafe import CAAFEClassifier
 from caafe.preprocessing import make_datasets_numeric
 from util.FileHandler import reader_CSV
 from caafe.data import refactor_openml_description, get_X_y
-from sklearn.metrics import accuracy_score, f1_score, log_loss
+from sklearn.metrics import accuracy_score, f1_score, log_loss, roc_auc_score
 from util.LogResults import LogResults
 import time
 
@@ -82,6 +82,8 @@ if __name__ == "__main__":
     _, train_y = get_X_y(df_train, args.target_attribute)
     _, test_y = get_X_y(df_test, args.target_attribute)
 
+    set_dataset(df_train=df_train, trainy=train_y, df_test=df_test, testy=test_y, traget_attribute=args.target_attribute)
+
     time_end = time.time()
     extra_time = time_end - time_start
 
@@ -106,9 +108,6 @@ if __name__ == "__main__":
 
     pred_test = caafe_clf.predict(df_test)
     pred_train = caafe_clf.predict(df_train)
-
-    acc_test = accuracy_score(pred_test, test_y)
-    acc_train = accuracy_score(pred_train, train_y)
 
     for i in range(1, args.prompt_number_iteration+1):
         try:

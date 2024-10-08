@@ -19,7 +19,6 @@ __Mixtral_8x7b_32768 = 32768
 __Gemma_7b_it = 8192
 __Gemini = 8192
 
-
 _OPENAI = "OpenAI"
 __GPT_system_delimiter = "### "
 __GPT_user_delimiter = "### "
@@ -41,6 +40,26 @@ _delay = 75
 _last_API_Key = None
 _LLM_API_Key = None
 _system_log_file = None
+
+_df_train = None
+_trainy = None
+_df_test = None
+_testy = None
+_target_attribute = None
+
+
+def set_dataset(df_train, trainy, df_test, testy, traget_attribute):
+    global _df_train
+    global _trainy
+    global _df_test
+    global _testy
+    global _target_attribute
+
+    _trainX = df_train
+    _trainy = trainy
+    _testX = df_test
+    _testy = testy
+    _target_attribute = traget_attribute
 
 
 def set_config(model, delay, system_log):
