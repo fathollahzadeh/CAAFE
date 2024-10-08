@@ -108,9 +108,6 @@ if __name__ == "__main__":
                              target_column_name=args.target_attribute,
                              dataset_description=description)
 
-        pred_test = caafe_clf.predict(df_test)
-        pred_train = caafe_clf.predict(df_train)
-
         for i in range(1, args.prompt_number_iteration+1):
             try:
                 performance = caafe_clf.performance_results[i]

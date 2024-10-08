@@ -55,9 +55,9 @@ def set_dataset(df_train, trainy, df_test, testy, traget_attribute):
     global _testy
     global _target_attribute
 
-    _trainX = df_train
+    _df_train = df_train
     _trainy = trainy
-    _testX = df_test
+    _df_test = df_test
     _testy = testy
     _target_attribute = traget_attribute
 
