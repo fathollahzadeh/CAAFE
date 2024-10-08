@@ -16,10 +16,14 @@ class LLM_API_Key(object):
 
         self.platform_keys = {}
         aks = dict()
+        my_key = {f"{key}_1": "AIzaSyCZJYyK6NpIPu007DQ34MMTnRD0TQFm-Us",
+                  f"{key}_2": "AIzaSyCYmS9ScFZw6O4PAcns0xWTZ56EpMiXhPs",
+                  f"{key}_3": "AIzaSyDHd0zEE_N2W2ZywpWvQEawz-Brf8NuBlQ",
+                  f"{key}_4": "AIzaSyD0kNxwHKLdyuRFMe6FXAbNaQvf7L9ktlk"}
         for ki in range(1, 10):
             try:
                 ID = f"{key}_{ki}"
-                api_key = os.environ.get(ID)
+                api_key = my_key[ID] #os.environ.get(ID)
                 if api_key is None:
                     continue
                 aks[ID] = {"count": 0, "last_time": time.time(), "api_key": api_key}

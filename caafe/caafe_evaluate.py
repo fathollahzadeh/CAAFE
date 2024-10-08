@@ -110,9 +110,11 @@ def evaluate_dataset(
         )
     # If sklearn classifier
     elif isinstance(method, BaseEstimator):
+        print("IIIIIIIIIIIIIIIIIIIIII")
         method.fit(X=x, y=y.long())
         ys = method.predict_proba(test_x)
     else:
+        print("MMMMMMMMMMMMMMMMMMMMMMM")
         metric, ys, res = method(
             x,
             y,
@@ -121,13 +123,19 @@ def evaluate_dataset(
             [],
             metric_used,
         )
-
-    acc = accuracy_metric(test_y, ys) #tabpfn.scripts.tabular_metrics.accuracy_metric(test_y, ys)
+    print("TEST Y >>>>>>>>>>>>>>")
+    print(test_y)
+    print("YS >>>>>>>>>>>>>>>>")
+    print(ys)
+    print("----------------------------------")
+    from tabpfn.scripts.tabular_metrics import accuracy_metric, auc_metric
+    acc = accuracy_metric(test_y, ys) #accuracy_metric(test_y, ys) #
     roc_ovo = auc_metric(test_y, ys, multi_class="ovo") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
     roc_ovr = auc_metric(test_y, ys, multi_class="ovr") #tabpfn.scripts.tabular_metrics.auc_metric(test_y, ys)
 
 
     method_str = method if type(method) == str else "transformer"
+    print(method_str)
     return {
         "acc": float(acc.numpy()),
         "roc_ovo": float(roc_ovo.numpy()),
