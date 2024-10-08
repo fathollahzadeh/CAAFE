@@ -376,7 +376,7 @@ def generate_features(
             + f"\n"
         )
 
-        rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test = evaluate_model(full_code=full_code, code=update_code)
+        e, rocs_train_ovo, rocs_train_ovr, accs_train, rocs_test_ovo, rocs_test_ovr, accs_test = evaluate_model(full_code=full_code, code=update_code)
         performance_results[i] = {"test_auc_ovo": np.nanmean(rocs_test_ovo),
                                   "test_auc_ovr": np.nanmean(rocs_test_ovr),
                                   "test_acc": np.nanmean(accs_test),
